@@ -37,13 +37,31 @@ class RateLimitPlugin(base_plugin.BasePlugin):
         now = time.time()
         window = self.user_windows[user_id]
 
-        # TODO: Implement sliding window:
-        # 1. Pop timestamps older than (now - window_seconds) from the left
-        # 2. If len(window) >= max_requests:
-        #       wait = window_seconds - (now - window[0])
-        #       self.blocked_count += 1
-        #       return self._block_response(
-        #           f"Rate limit exceeded. Try again in {wait:.0f}s."
-        #       )
-        # 3. Else: append now, return None
-        raise NotImplementedError("Implement RateLimitPlugin.on_user_message_callback")
+        # 1. Bỏ các timestamp đã trượt ra khỏi cửa sổ
+        while window and window[0] <= now - self.window_seconds:
+            window.popleft()
+
+        # 2. Đã đủ quota trong cửa sổ → chặn, không gọi LLM
+        if len(window) >= self.max_requests:
+            wait = self.window_seconds - (now - window[0])
+            self.blocked_count += 1
+            return self._block_response(
+                f"Rate limit exceeded. Try again in {wait:.0f}s."
+            )
+
+        # 3. Còn quota → ghi nhận và cho qua
+        window.append(now)
+        return None
+
+    def refund(self, user_id: str = "student"):
+        """Hoàn lại lượt gần nhất (request lỗi phía upstream, sẽ retry) — không tính quota."""
+        window = self.user_windows.get(user_id)
+        if window:
+            window.pop()
+
+    def reset(self, user_id: str | None = None):
+        """Xoá cửa sổ (một user hoặc tất cả) — dùng giữa các nhóm test."""
+        if user_id is None:
+            self.user_windows.clear()
+        else:
+            self.user_windows.pop(user_id, None)

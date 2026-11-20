@@ -12,6 +12,7 @@ from google.adk.agents import llm_agent
 from google.adk import runners
 from google.adk.plugins import base_plugin
 
+from core.config import DEMO_SECRETS
 from core.utils import chat_with_agent
 
 
@@ -37,16 +38,19 @@ def content_filter(response: str) -> dict:
         dict with 'safe', 'issues', and 'redacted' keys
     """
     issues = []
-    redacted = response
+    redacted = response or ""
+    response = response or ""
 
-    # PII patterns to check
+    # Thứ tự quan trọng: secret/khoá dài trước, số điện thoại trước CCCD
     PII_PATTERNS = {
-        # TODO: Add regex patterns for:
-        # - VN phone number: r"0\d{9,10}"
-        # - Email: r"[\w.-]+@[\w.-]+\.[a-zA-Z]{2,}"
-        # - National ID (CMND/CCCD): r"\b\d{9}\b|\b\d{12}\b"
-        # - API key pattern: r"sk-[a-zA-Z0-9-]+"
-        # - Password pattern: r"password\s*[:=]\s*\S+"
+        # Giá trị secret nội bộ (đọc từ data/protected/vinbank_secrets.json)
+        **{f"protected_secret_{i}": re.escape(s) for i, s in enumerate(DEMO_SECRETS) if s},
+        "api_key": r"\bsk-[a-zA-Z0-9_-]{6,}",
+        "password": r"\b(password|passwd|pwd|mat khau|mật khẩu)\b\s*(is|là|:|=)\s*\S+",
+        "internal_host": r"\b[\w.-]+\.internal(:\d{2,5})?\b",
+        "email": r"[\w.+-]+@[\w-]+(\.[\w-]+)*\.[a-zA-Z]{2,}",
+        "vn_phone": r"(?<!\d)(\+84|84|0)(3|5|7|8|9)\d{8}(?!\d)",
+        "national_id": r"(?<!\d)(\d{12}|\d{9})(?!\d)",
     }
 
     for name, pattern in PII_PATTERNS.items():
@@ -172,16 +176,32 @@ class OutputGuardrailPlugin(base_plugin.BasePlugin):
         if not response_text:
             return llm_response
 
-        # TODO: Implement logic:
-        # 1. Call content_filter(response_text)
-        #    - If issues found: replace llm_response.content with redacted version
-        #    - Increment self.redacted_count
-        # 2. If use_llm_judge: call llm_safety_check(response_text)
-        #    - If unsafe: replace llm_response.content with a safe message
-        #    - Increment self.blocked_count
-        # 3. Return llm_response (possibly modified)
+        self.last_issues = []
 
-        return llm_response  # TODO: modify if needed
+        # 1. Regex filter: che PII / secret
+        result = content_filter(response_text)
+        if not result["safe"]:
+            self.redacted_count += 1
+            self.last_issues = result["issues"]
+            llm_response.content = types.Content(
+                role="model",
+                parts=[types.Part.from_text(text=result["redacted"])],
+            )
+            response_text = result["redacted"]
+
+        # 2. (Optional) LLM-as-Judge
+        if self.use_llm_judge:
+            verdict = await llm_safety_check(response_text)
+            if not verdict["safe"]:
+                self.blocked_count += 1
+                llm_response.content = types.Content(
+                    role="model",
+                    parts=[types.Part.from_text(
+                        text="I'm sorry, I can't share that. How else can I help with your banking needs?"
+                    )],
+                )
+
+        return llm_response
 
 
 # ============================================================
