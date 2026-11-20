@@ -1,5 +1,34 @@
 # Day 11 — Controlled Agent Security (2026)
 
+## 👤 Thông tin học viên
+
+| | |
+|---|---|
+| **Họ tên** | Nguyễn Ánh Dương |
+| **MSSV** | 2A202604087 |
+| **Lớp** | K5 — L3B |
+| **Red Team provider** | OpenAI `gpt-4o-mini` |
+
+### Cách chạy nhanh
+
+```powershell
+python -m venv .venv; .\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+Copy-Item .env.example .env   # điền OPENROUTER_API_KEY + OPENAI_API_KEY
+python src/main.py --part 2   # CP2 guardrails (in terminal)
+python src/main.py --part 3   # CP3 → outputs/results.json, audit_log.json, metrics.json
+python src/main.py --part 4   # CP4 → outputs/attack_results.json (+ unsafe/guards)
+python scripts/grade.py --submission-dir . --out outputs/grade_report.json
+```
+
+### Tóm tắt bài làm
+
+- **CP2** `src/guardrails/`: chuẩn hoá Unicode (NFKC, bỏ zero-width, bỏ dấu tiếng Việt) → 10 nhóm regex injection (EN + VI); topic filter theo ranh giới từ; output filter redact secret / API key / password / `*.internal` / email / SĐT VN / CCCD.
+- **CP3** `src/assignment/`: thứ tự `rate_limiter → input_guardrail → output_guardrail`; sliding-window rate limit theo user; audit log + monitoring (side observers) có alert; egress allowlist HTTPS khớp host chính xác + chặn payload nhạy cảm.
+- **CP4** `src/attacks/attacks.py`: 5 prompt tiếng Việt (Completion, Translation, Creative, Confirmation, Multi-step) — Red leak 5/5; Red Advance chặn 5/5 tại NeMo input rail.
+
+---
+
 > 👤 **Hình thức:** bài tập **cá nhân** (1 người / 1 MSSV).  
 > 🎯 **Mục tiêu:** đóng vai **Blue Team** để học cách xây Guardrails phòng thủ, rồi đóng vai **Red Team** để tấn công agent **Red** hoặc **Red Advance**.  
 > ✅ Làm theo **Checkpoint 1 → 5** trong [`CHECKPOINTS.md`](CHECKPOINTS.md) · nộp theo [`SUBMISSION.md`](SUBMISSION.md).

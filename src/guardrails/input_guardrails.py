@@ -111,6 +111,19 @@ def detect_injection(user_input: str) -> InputStatus:
 # Return ``"ALLOW"`` if banking-related and OK.
 # ============================================================
 
+# Bổ sung cho ALLOWED_TOPICS của starter (quá hẹp → chặn nhầm "card PIN", "mortgage"…).
+# Không sửa core.config vì Red Advance dùng chung danh sách đó.
+# Tiếng Việt ở dạng đã bỏ dấu; "thẻ" → "the" trùng mạo từ tiếng Anh nên chỉ dùng cụm.
+EXTRA_ALLOWED_TOPICS = [
+    "bank", "vinbank", "card", "debit", "visa", "mastercard", "pin", "otp",
+    "fee", "wire", "mortgage", "exchange rate", "currency", "branch",
+    "statement", "overdraft", "cheque", "check deposit", "insurance",
+    "the visa", "the ghi no", "the atm", "mo the", "khoa the", "mat the",
+    "phi thuong nien", "phi giao dich", "phi chuyen", "ty gia", "chi nhanh",
+    "sao ke", "tien gui", "rut tien", "nap tien", "khoan vay", "thanh toan",
+]
+
+
 def topic_filter(user_input: str) -> InputStatus:
     """Decide whether the input is on-topic for VinBank.
 
@@ -131,7 +144,8 @@ def topic_filter(user_input: str) -> InputStatus:
             return "BLOCK"
 
     # 2. Phải có ít nhất một tín hiệu banking (EN + VI đã bỏ dấu)
-    if not any(re.search(rf"\b{re.escape(topic)}", input_lower) for topic in ALLOWED_TOPICS):
+    if not any(re.search(rf"\b{re.escape(topic)}", input_lower)
+               for topic in (*ALLOWED_TOPICS, *EXTRA_ALLOWED_TOPICS)):
         return "BLOCK"
 
     # 3. Banking hợp lệ
