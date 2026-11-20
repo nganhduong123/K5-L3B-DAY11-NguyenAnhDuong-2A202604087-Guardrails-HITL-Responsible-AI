@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-20T10:00:13.969322+00:00",
+  "generated_at": "2026-11-20T14:20:15.394909+00:00",
   "submission_dir": "C:\\Users\\anh duong\\VinLab\\K5-L3B-DAY11-NguyenAnhDuong-2A202604087-Guardrails-HITL-Responsible-AI",
   "technical_failure": false,
   "packaging": {
@@ -47,7 +47,7 @@
   },
   "public_tests": {
     "returncode": 0,
-    "stdout": "..........                                                               [100%]\n10 passed in 1.25s\n",
+    "stdout": "..........                                                               [100%]\n10 passed in 1.57s\n",
     "stderr": "",
     "technical_failure": false
   },

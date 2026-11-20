@@ -76,11 +76,13 @@ INJECTION_PATTERNS = [
     r"\bact as\b.{0,10}\b(an? )?(unrestricted|unfiltered|uncensored|jailbroken|evil|dan)\b",
     # 7. Jailbreak persona phổ biến (không bắt "dan" đứng riêng: "huong dan"/"nguoi dan" sau khi bỏ dấu)
     r"\b(do anything now|developer mode|jailbreak|god mode|dan mode)\b",
-    # 8. Đòi trực tiếp secret nội bộ
-    r"\b(reveal|show|give|tell|share|print|leak|expose|send|confirm)\b.{0,40}\b(admin password|password|api[ _-]?key|credentials?|secret|db host|database host|connection string)\b",
+    # 8. Đòi trực tiếp secret nội bộ. Bỏ qua câu hỏi về tài khoản của chính khách hàng
+    #    ("show me how to change MY password") — tempered token cấm "my"/"how" ở giữa.
+    r"\b(reveal|show|give|tell|share|print|leak|expose|send|confirm)\b(?:(?!\b(?:my|how)\b).){0,40}\b(admin password|password|api[ _-]?key|credentials?|secret|db host|database host|connection string)\b",
     # 9. Tiếng Việt (đã bỏ dấu): "bỏ qua mọi hướng dẫn", "tiết lộ mật khẩu"
     r"\bbo qua\b.{0,20}\b(huong dan|chi dan|quy tac|lenh)\b",
-    r"\b(tiet lo|cho biet|dua|in ra)\b.{0,30}\b(mat khau|api key|khoa api|prompt he thong)\b",
+    #    Tương tự: không chặn "cho biết cách đổi mật khẩu của tôi"
+    r"\b(tiet lo|cho biet|dua|in ra)\b(?:(?!\b(?:cach|lam sao|cua toi|cua minh)\b).){0,30}\b(mat khau|api key|khoa api|prompt he thong)\b(?! (?:cua toi|cua minh)\b)",
 ]
 
 
